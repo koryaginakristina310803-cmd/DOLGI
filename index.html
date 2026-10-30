@@ -1,10 +1,83 @@
-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script>(function(){var D={"loans": {"tbank-refi": {"name": "Рефинансирование", "bank": "Т-Банк", "balance": 386495.84, "rate": 36.6, "payment": 18430, "day": 6}, "tbank-purchase": {"name": "Кредит на покупку", "bank": "Т-Банк", "balance": 60104.36, "rate": 22.3, "payment": 3960, "day": 3}}, "cards": {"alfa-card": {"name": "Кредитка Альфа", "bank": "Альфа-Банк", "limit": 100000, "debt": 107062.65, "debtDate": "2026-10-29", "rate": 58.99, "minPct": 10, "minFixed": 0, "day": 23, "graceDebt": 0, "graceEnd": ""}, "sber-card": {"name": "Кредитка Сбер", "bank": "Сбербанк", "limit": 150000, "debt": 62989.04, "debtDate": "2026-10-28", "rate": 59.8, "minPct": 10, "minFixed": 0, "day": 21, "graceDebt": 62989.04, "graceEnd": "2026-12-31"}}, "incomes": {"salary": {"name": "Зарплата", "amount": 52500, "day": 5}, "advance": {"name": "Аванс", "amount": 52500, "day": 20}}, "expenses": {"transit": {"name": "Проезд", "amount": 3500, "kind": "fixed"}, "food": {"name": "Еда", "amount": 12000, "kind": "var"}, "fuel": {"name": "Бензин", "amount": 10000, "kind": "var"}, "phone": {"name": "Телефон", "amount": 750, "kind": "fixed"}}, "payments": {}, "spends": {}, "settings": {"main": {"extraIncome": 0, "cushionGoal": 50000, "cushionSaved": 0, "cushionMonthly": 10000, "cushionStart": "after", "startDebt": 616651.89, "startDate": "2026-10-29", "startBalances": {"tbank-refi": 386495.84, "tbank-purchase": 60104.36, "alfa-card": 107062.65, "sber-card": 62989.04}}}},CL={},DL={},n=0;
-function snapC(c){var o=D[c]||{};return{docs:Object.keys(o).sort().map(function(id){return{id:id,data:function(){return o[id]}}})}}
-function fire(c,id){(CL[c]||[]).forEach(function(f){f(snapC(c))});(DL[c+"/"+id]||[]).forEach(function(f){var x=(D[c]||{})[id];f({exists:!!x,data:function(){return x}})})}
-function dref(c,id){id=id||("n"+Date.now()+(n++));return{id:id,set:async function(b){D[c]=D[c]||{};D[c][id]=JSON.parse(JSON.stringify(b));setTimeout(function(){fire(c,id)},0)},update:async function(b){Object.assign(D[c][id],b);setTimeout(function(){fire(c,id)},0)},delete:async function(){if(D[c])delete D[c][id];setTimeout(function(){fire(c,id)},0)},
- onSnapshot:function(f){var k=c+"/"+id;(DL[k]=DL[k]||[]).push(f);setTimeout(function(){var x=(D[c]||{})[id];f({exists:!!x,data:function(){return x}})},0);return function(){}}}}
-var db={collection:function(c){return{doc:function(id){return dref(c,id)},onSnapshot:function(f){(CL[c]=CL[c]||[]).push(f);setTimeout(function(){f(snapC(c))},0);return function(){}}}},doc:function(p){var s=p.split("/");return dref(s[0],s[1])}};
-window.claude={use:async function(n){return n==="db"?db:null}};})();</script></head><body style="margin:0"><title>Долги и бюджет</title>
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script>(function(){
+var STORAGE_KEY="debts-budget-v1";
+var INITIAL={"loans": {"tbank-refi": {"name": "Рефинансирование", "bank": "Т-Банк", "balance": 386495.84, "rate": 36.6, "payment": 18430, "day": 6}, "tbank-purchase": {"name": "Кредит на покупку", "bank": "Т-Банк", "balance": 60104.36, "rate": 22.3, "payment": 3960, "day": 3}}, "cards": {"alfa-card": {"name": "Кредитка Альфа", "bank": "Альфа-Банк", "limit": 100000, "debt": 107062.65, "debtDate": "2026-10-29", "rate": 58.99, "minPct": 10, "minFixed": 0, "day": 23, "graceDebt": 0, "graceEnd": ""}, "sber-card": {"name": "Кредитка Сбер", "bank": "Сбербанк", "limit": 150000, "debt": 62989.04, "debtDate": "2026-10-28", "rate": 59.8, "minPct": 10, "minFixed": 0, "day": 21, "graceDebt": 62989.04, "graceEnd": "2026-12-31"}}, "incomes": {"salary": {"name": "Зарплата", "amount": 52500, "day": 5}, "advance": {"name": "Аванс", "amount": 52500, "day": 20}}, "expenses": {"transit": {"name": "Проезд", "amount": 3500, "kind": "fixed"}, "food": {"name": "Еда", "amount": 12000, "kind": "var"}, "fuel": {"name": "Бензин", "amount": 10000, "kind": "var"}, "phone": {"name": "Телефон", "amount": 750, "kind": "fixed"}}, "payments": {}, "spends": {}, "settings": {"main": {"extraIncome": 0, "cushionGoal": 50000, "cushionSaved": 0, "cushionMonthly": 10000, "cushionStart": "after", "startDebt": 616651.89, "startDate": "2026-10-29", "startBalances": {"tbank-refi": 386495.84, "tbank-purchase": 60104.36, "alfa-card": 107062.65, "sber-card": 62989.04}}}};
+function load(){
+  try{
+    var raw=localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      var parsed=JSON.parse(raw);
+      if(parsed && typeof parsed==="object") return parsed;
+    }
+  }catch(e){}
+  return JSON.parse(JSON.stringify(INITIAL));
+}
+var D=load();
+function save(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(D)); }catch(e){ console.warn("localStorage save failed", e); }
+}
+var CL={}, DL={}, n=0;
+function snapC(c){
+  var o=D[c]||{};
+  return {docs: Object.keys(o).sort().map(function(id){ return {id:id, data:function(){ return o[id]; }}; })};
+}
+function fire(c, id, doSave){
+  (CL[c]||[]).forEach(function(f){ f(snapC(c)); });
+  (DL[c+"/"+id]||[]).forEach(function(f){
+    var x=(D[c]||{})[id];
+    f({exists:!!x, data:function(){ return x; }});
+  });
+  if(doSave) save();
+}
+function dref(c, id){
+  id = id || ("n" + Date.now() + (n++));
+  return {
+    id: id,
+    set: async function(b){
+      D[c] = D[c] || {};
+      D[c][id] = JSON.parse(JSON.stringify(b));
+      setTimeout(function(){ fire(c, id, true); }, 0);
+    },
+    update: async function(b){
+      Object.assign(D[c][id], b);
+      setTimeout(function(){ fire(c, id, true); }, 0);
+    },
+    delete: async function(){
+      if(D[c]) delete D[c][id];
+      setTimeout(function(){ fire(c, id, true); }, 0);
+    },
+    onSnapshot: function(f){
+      var k = c + "/" + id;
+      (DL[k] = DL[k] || []).push(f);
+      setTimeout(function(){
+        var x = (D[c] || {})[id];
+        f({exists: !!x, data: function(){ return x; }});
+      }, 0);
+      return function(){};
+    }
+  };
+}
+var db = {
+  collection: function(c){
+    return {
+      doc: function(id){ return dref(c, id); },
+      onSnapshot: function(f){
+        (CL[c] = CL[c] || []).push(f);
+        setTimeout(function(){ f(snapC(c)); }, 0);
+        return function(){};
+      }
+    };
+  },
+  doc: function(p){
+    var s = p.split("/");
+    return dref(s[0], s[1]);
+  }
+};
+window.claude = {
+  use: async function(n){ return n === "db" ? db : null; }
+};
+// immediately save initial if nothing was in storage
+if(!localStorage.getItem(STORAGE_KEY)) save();
+})();</script></head><body style="margin:0"><title>Долги и бюджет</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@600&display=swap">
